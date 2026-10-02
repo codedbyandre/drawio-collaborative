@@ -1,0 +1,38 @@
+# One public origin for the editor, the room socket, and /cache.
+# Splitting /rt onto another hostname makes the editor's CSP reject the socket.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DRAWIO_PUBLIC_HOST} {
+	encode gzip zstd
+
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://{$DRAWIO_PUBLIC_HOST} https://{$DRAWIO_PUBLIC_HOST}; frame-src 'self'; frame-ancestors {$DRAWIO_FRAME_ANCESTORS}; object-src 'none'; base-uri 'self'"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+	}
+
+	# /health and /cache?alive=1 stay open. The editor waits on /cache?alive=1
+	# during startup. Closing it looks like a frozen editor.
+	@room path /rt /rt/* /cache /cache/* /health
+	handle @room {
+		reverse_proxy realtime:8080 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+
+	# Tomcat already sends Cache-Control for these types (see entrypoint.sh).
+	@static path /js/* /styles/* /libs/* /mxgraph/* /math/* /images/* /plugins/*
+	handle @static {
+		reverse_proxy drawio:8080
+	}
+
+	handle {
+		reverse_proxy drawio:8080
+	}
+}

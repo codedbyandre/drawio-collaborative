@@ -1,0 +1,27 @@
+{
+    "name": "drawio-collaborative-realtime",
+    "private": true,
+    "description": "In-memory room server for self-hosted draw.io collaborative editing. Page diffs, cursors, and presence. Diagrams are not stored here.",
+    "type": "module",
+    "license": "MIT",
+    "keywords": [
+        "drawio",
+        "diagrams.net",
+        "self-hosted",
+        "collaborative",
+        "realtime",
+        "websocket",
+        "nextcloud"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "start": "node server.mjs",
+        "test": "node --test server.test.mjs load-test.mjs",
+        "test:load": "node --test load-test.mjs"
+    },
+    "dependencies": {
+        "ws": "8.18.3"
+    }
+}

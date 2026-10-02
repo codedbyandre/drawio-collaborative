@@ -1,0 +1,62 @@
+# Self-hosted draw.io with collaborative editing.
+# The editor, the WebSocket room, and /cache share one hostname.
+# This stack does not store .drawio files. Your app does.
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DRAWIO_PUBLIC_HOST: ${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST in .env}
+      DRAWIO_FRAME_ANCESTORS: ${DRAWIO_FRAME_ANCESTORS:?Set DRAWIO_FRAME_ANCESTORS in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      realtime:
+        condition: service_healthy
+      drawio:
+        condition: service_started
+
+  drawio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      DRAWIO_SELF_CONTAINED: "1"
+      DRAWIO_PUBLIC_HOST: ${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST in .env}
+      DRAWIO_BASE_URL: https://${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST in .env}
+      DRAWIO_SERVER_URL: https://${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST in .env}/
+      DRAWIO_VIEWER_URL: https://${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST in .env}
+      DRAWIO_LIGHTBOX_URL: https://${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST in .env}
+      DRAWIO_LANG: ${DRAWIO_LANG:-en}
+      DRAWIO_CONFIG: '{"lockdown":false,"enableAi":false}'
+    volumes:
+      # Mount your own symbol libraries here. The image ships with an empty libs/.
+      - ${DRAWIO_LIBS_DIR:-./libs}:/config/libs:ro
+
+  realtime:
+    build:
+      context: ./realtime
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      NODE_ENV: production
+      DRAWIO_ORIGIN: ${DRAWIO_ORIGIN:?Set DRAWIO_ORIGIN in .env to https://your-editor-host}
+      DRAWIO_RT_SECRET: ${DRAWIO_RT_SECRET:?Set DRAWIO_RT_SECRET in .env}
+      DRAWIO_RT_MAX_CLIENTS: ${DRAWIO_RT_MAX_CLIENTS:-32}
+    expose:
+      - "8080"
+
+volumes:
+  caddy_data:
+  caddy_config:

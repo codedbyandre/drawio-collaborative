@@ -1,0 +1,99 @@
+# Dokploy compose for this host.
+# In the Dokploy service: Git repository, Compose path docker-compose.dokploy.yml,
+# type Docker Compose (not Stack). Put the .env.example keys in the Environment tab.
+# Do not use a raw Deploy. Raw Deploy deletes the build context and the image
+# is then built without PreConfig.js.
+#
+# Router names are drawio-collab and drawio-collab-rt. If this server already
+# has Traefik routers with those names, rename them before the first deploy.
+# A name clash fails the deploy. It does not merge with another draw.io stack.
+
+services:
+  drawio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    restart: unless-stopped
+    environment:
+      DRAWIO_SELF_CONTAINED: "1"
+      DRAWIO_PUBLIC_HOST: ${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST}
+      DRAWIO_BASE_URL: https://${DRAWIO_PUBLIC_HOST}
+      DRAWIO_SERVER_URL: https://${DRAWIO_PUBLIC_HOST}/
+      DRAWIO_VIEWER_URL: https://${DRAWIO_PUBLIC_HOST}
+      DRAWIO_LIGHTBOX_URL: https://${DRAWIO_PUBLIC_HOST}
+      DRAWIO_LANG: ${DRAWIO_LANG:-en}
+      DRAWIO_CONFIG: '{"lockdown":false,"enableAi":false}'
+    volumes:
+      - ${DRAWIO_LIBS_DIR:-./libs}:/config/libs:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.services.drawio-collab.loadbalancer.server.port=8080
+      - traefik.http.routers.drawio-collab-web.rule=Host(`${DRAWIO_PUBLIC_HOST}`)
+      - traefik.http.routers.drawio-collab-web.entrypoints=web
+      - traefik.http.routers.drawio-collab-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.drawio-collab-web.service=drawio-collab
+      - traefik.http.routers.drawio-collab.rule=Host(`${DRAWIO_PUBLIC_HOST}`)
+      - traefik.http.routers.drawio-collab.entrypoints=websecure
+      - traefik.http.routers.drawio-collab.tls.certresolver=letsencrypt
+      - traefik.http.routers.drawio-collab.service=drawio-collab
+      - traefik.http.routers.drawio-collab.middlewares=drawio-collab-csp,drawio-collab-compress
+      - traefik.http.middlewares.drawio-collab-compress.compress=true
+      - "traefik.http.middlewares.drawio-collab-csp.headers.customresponseheaders.Content-Security-Policy=default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://${DRAWIO_PUBLIC_HOST} https://${DRAWIO_PUBLIC_HOST}; frame-src 'self'; frame-ancestors ${DRAWIO_FRAME_ANCESTORS:?Set DRAWIO_FRAME_ANCESTORS}; object-src 'none'; base-uri 'self'"
+      - traefik.http.middlewares.drawio-collab-static-cache.headers.customresponseheaders.Cache-Control=public, max-age=86400
+      - traefik.http.routers.drawio-collab-static.rule=Host(`${DRAWIO_PUBLIC_HOST}`) && (PathPrefix(`/js`) || PathPrefix(`/styles`) || PathPrefix(`/libs`) || PathPrefix(`/mxgraph`) || PathPrefix(`/math`) || PathPrefix(`/images`) || PathPrefix(`/plugins`))
+      - traefik.http.routers.drawio-collab-static.entrypoints=websecure
+      - traefik.http.routers.drawio-collab-static.priority=150
+      - traefik.http.routers.drawio-collab-static.tls.certresolver=letsencrypt
+      - traefik.http.routers.drawio-collab-static.service=drawio-collab
+      - traefik.http.routers.drawio-collab-static.middlewares=drawio-collab-static-cache,drawio-collab-compress
+    networks:
+      - dokploy-network
+      - default
+
+  realtime:
+    build:
+      context: ./realtime
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      NODE_ENV: production
+      DRAWIO_ORIGIN: ${DRAWIO_ORIGIN:?Set DRAWIO_ORIGIN}
+      DRAWIO_RT_SECRET: ${DRAWIO_RT_SECRET:?Set DRAWIO_RT_SECRET}
+      DRAWIO_RT_MAX_CLIENTS: ${DRAWIO_RT_MAX_CLIENTS:-32}
+    expose:
+      - "8080"
+
+  rt-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    expose:
+      - "80"
+    restart: unless-stopped
+    depends_on:
+      - realtime
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.services.drawio-collab-rt.loadbalancer.server.port=80
+      - traefik.http.routers.drawio-collab-rt-web.rule=Host(`${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST}`) && (PathPrefix(`/rt`) || PathPrefix(`/cache`) || Path(`/health`))
+      - traefik.http.routers.drawio-collab-rt-web.entrypoints=web
+      - traefik.http.routers.drawio-collab-rt-web.priority=200
+      - traefik.http.routers.drawio-collab-rt-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.drawio-collab-rt-web.service=drawio-collab-rt
+      - traefik.http.routers.drawio-collab-rt.rule=Host(`${DRAWIO_PUBLIC_HOST}`) && (PathPrefix(`/rt`) || PathPrefix(`/cache`) || Path(`/health`))
+      - traefik.http.routers.drawio-collab-rt.entrypoints=websecure
+      - traefik.http.routers.drawio-collab-rt.priority=200
+      - traefik.http.routers.drawio-collab-rt.tls.certresolver=letsencrypt
+      - traefik.http.routers.drawio-collab-rt.service=drawio-collab-rt
+    networks:
+      - dokploy-network
+      - default
+
+networks:
+  dokploy-network:
+    external: true

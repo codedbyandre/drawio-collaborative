@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+	<id>drawio_collab</id>
+	<name>Draw.io collaborative rooms</name>
+	<summary>Adds live collaboration to a self-hosted draw.io editor</summary>
+	<description><![CDATA[Signs a short-lived room token and appends it to the Nextcloud Draw.io iframe. The drawing stays in Nextcloud. Live cursors and page diffs stay on your draw.io host.]]></description>
+	<version>1.0.0</version>
+	<licence>mit</licence>
+	<author>draw.io collaborative</author>
+	<namespace>DrawioCollab</namespace>
+	<category>integration</category>
+	<dependencies>
+		<nextcloud min-version="28" max-version="34"/>
+	</dependencies>
+</info>

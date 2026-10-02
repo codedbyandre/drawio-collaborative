@@ -1,0 +1,4 @@
+.env
+realtime/node_modules
+examples/embed/data
+.DS_Store

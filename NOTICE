@@ -1,0 +1,23 @@
+This repository configures and fronts the official draw.io Docker image.
+It does not fork draw.io and it does not modify app.min.js. The editor is
+pulled from Docker Hub at build time and started through its own
+entrypoint. Only the configuration hooks draw.io itself provides are used:
+PreConfig.js, PostConfig.js, DRAWIO_* environment variables, URL
+parameters, and the embed protocol.
+
+The base image `jgraph/drawio` is draw.io / diagrams.net, licensed under
+the Apache License, Version 2.0. Keep that image, its copyright notices,
+and its license when you redistribute a deployment. The Apache-2.0 text
+ships inside the image.
+
+draw.io and diagrams.net are trademarks of their respective owners. This
+project is not affiliated with, sponsored by, or endorsed by them. It does
+not redistribute their hosted services, and it does not use their names to
+suggest an association.
+
+PreConfig.js, PostConfig.js, the entrypoint, the room server, the compose
+files, and the examples in this repository are under the MIT license in
+LICENSE.
+
+Symbol libraries are not included. Put your own XML libraries in `libs/`
+or mount them. Do not commit libraries you do not have rights to publish.

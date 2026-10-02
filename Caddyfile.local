@@ -1,0 +1,35 @@
+# Laptop only. HTTP on port 8080, no certificate, no ports 80 or 443.
+{
+	auto_https off
+}
+
+:8080 {
+	encode gzip zstd
+
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws://{$DRAWIO_PUBLIC_HOST} http://{$DRAWIO_PUBLIC_HOST}; frame-src 'self'; frame-ancestors {$DRAWIO_FRAME_ANCESTORS}; object-src 'none'; base-uri 'self'"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+	}
+
+	@room path /rt /rt/* /cache /cache/* /health
+	handle @room {
+		reverse_proxy realtime:8080 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+
+	# Tomcat already sends Cache-Control for these types (see entrypoint.sh).
+	@static path /js/* /styles/* /libs/* /mxgraph/* /math/* /images/* /plugins/*
+	handle @static {
+		reverse_proxy drawio:8080
+	}
+
+	handle {
+		reverse_proxy drawio:8080
+	}
+}

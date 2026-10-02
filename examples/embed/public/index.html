@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>draw.io collaborative example</title>
+    <style>
+        :root { color-scheme: light; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font: 16px/1.4 system-ui, sans-serif; color: #1c1917; background: #f6f4ef; }
+        header { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 16px 20px; border-bottom: 1px solid #e4dfd4; }
+        h1 { font-size: 18px; margin: 0 16px 0 0; }
+        label { display: grid; gap: 4px; font-size: 13px; }
+        input { font: inherit; padding: 6px 8px; border: 1px solid #c9c2b4; background: #fff; }
+        button { font: inherit; padding: 8px 12px; background: #1c1917; color: #fff; border: 0; cursor: pointer; }
+        #status { margin-left: auto; font-size: 14px; }
+        #peers { min-height: 1.2em; font-size: 14px; }
+        #frame-wrap { height: calc(100vh - 92px); }
+        iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+        .error { color: #9f1239; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Two windows, one diagram</h1>
+        <label>First name <input id="name" name="name" autocomplete="given-name" required></label>
+        <label>Room <input id="room" name="room" value="demo" required></label>
+        <button id="open" type="button">Open editor</button>
+        <p id="peers"></p>
+        <p id="status">Pick a name, then open the same room in a second window.</p>
+    </header>
+    <div id="frame-wrap"></div>
+    <script src="/parent.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+.git
+.env
+examples
+docs
+realtime
+**/.DS_Store
+**/node_modules
+*.md
+scripts
+.github

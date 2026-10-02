@@ -1,0 +1,25 @@
+# Optional. Editor-menu PlantUML and image export.
+#   docker compose -f docker-compose.yml -f docker-compose.export.yml up -d --build
+# These processes run only when someone exports from the editor.
+# They are not the file store, and they are not a desktop PDF CLI.
+
+services:
+  plantuml:
+    image: plantuml/plantuml-server
+    restart: unless-stopped
+    expose:
+      - "8080"
+  image-export:
+    image: jgraph/export-server
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      DRAWIO_BASE_URL: https://${DRAWIO_PUBLIC_HOST:?Set DRAWIO_PUBLIC_HOST in .env}
+  drawio:
+    environment:
+      PLANTUML_URL: http://plantuml:8080/
+      EXPORT_URL: http://image-export:8000/
+    depends_on:
+      - plantuml
+      - image-export
